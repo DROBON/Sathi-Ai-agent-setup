@@ -1,1 +1,266 @@
-jgxxghji
+# Configuration for the SathiAI application
+#
+# Guidelines:
+# - Copy this file to `config.yaml` and customize it for your environment
+# - The default path of this configuration file is `config.yaml` in the project root.
+#   You can set `SATHI_AI_PROJECT_ROOT` to define that root explicitly, or use
+#   `SATHI_AI_CONFIG_PATH` to point at a specific config file.
+# - Runtime state defaults to `.sathi-ai` under the project root. Override it
+#   with `SATHI_AI_HOME` when you need a different writable data directory.
+# - Environment variables are available for all field values. Example: `api_key: $OPENAI_API_KEY`
+# - The `use` path is a string that looks like "package_name.sub_package_name.module_name:class_name/variable_name".
+
+# ============================================================================
+# Config Version (used to detect outdated config files)
+# ============================================================================
+# Bump this number when the config schema changes.
+# Run `make config-upgrade` to merge new fields into your local config.yaml.
+config_version: 8
+
+# ============================================================================
+# Logging
+# ============================================================================
+# Log level for sathiai modules (debug/info/warning/error)
+log_level: info
+
+# ============================================================================
+# Token Usage
+# ============================================================================
+# Enable token usage collection and display.
+# When enabled, SathiAI records input/output/total tokens per model call
+# and shows usage metadata in the workspace UI when providers return it.
+token_usage:
+  enabled: false
+
+# ============================================================================
+# Models Configuration
+# ============================================================================
+# Configure available LLM models for the agent to use
+
+models:
+  # Example: Volcengine (Doubao) model
+  # - name: doubao-seed-1.8
+  #   display_name: Doubao-Seed-1.8
+  #   use: sathiai.models.patched_deepseek:PatchedChatDeepSeek
+  #   model: doubao-seed-1-8-251228
+  #   api_base: https://ark.cn-beijing.volces.com/api/v3
+  #   api_key: $VOLCENGINE_API_KEY
+  #   timeout: 600.0
+  #   max_retries: 2
+  #   supports_thinking: true
+  #   supports_vision: true
+  #   supports_reasoning_effort: true
+  #   when_thinking_enabled:
+  #     extra_body:
+  #       thinking:
+  #         type: enabled
+  #   when_thinking_disabled:
+  #     extra_body:
+  #       thinking:
+  #         type: disabled
+
+  # Example: OpenAI model
+  - name: gpt-4
+    display_name: GPT-4
+    use: langchain_openai:ChatOpenAI
+    model: gpt-4
+    api_key: $OPENAI_API_KEY # Use environment variable
+    request_timeout: 600.0
+    max_retries: 2
+    max_tokens: 4096
+    temperature: 0.7
+    supports_vision: true # Enable vision support for view_image tool
+
+  # Example: Anthropic Claude model
+  # - name: claude-3-5-sonnet
+  #   display_name: Claude 3.5 Sonnet
+  #   use: langchain_anthropic:ChatAnthropic
+  #   model: claude-3-5-sonnet-20241022
+  #   api_key: $ANTHROPIC_API_KEY
+  #   default_request_timeout: 600.0
+  #   max_retries: 2
+  #   max_tokens: 8192
+  #   supports_vision: true  # Enable vision support for view_image tool
+
+# ============================================================================
+# Tool Groups Configuration
+# ============================================================================
+# Define groups of tools for organization and access control
+
+tool_groups:
+  - name: web
+  - name: file:read
+  - name: file:write
+  - name: bash
+
+# ============================================================================
+# Tools Configuration
+# ============================================================================
+# Configure available tools for the agent to use
+
+tools:
+  # Web search tool (uses DuckDuckGo, no API key required)
+  - name: web_search
+    group: web
+    use: sathiai.community.ddg_search.tools:web_search_tool
+    max_results: 5
+
+  # Web fetch tool (uses Jina AI reader)
+  - name: web_fetch
+    group: web
+    use: sathiai.community.jina_ai.tools:web_fetch_tool
+    timeout: 10
+
+  # File operations tools
+  - name: ls
+    group: file:read
+    use: sathiai.sandbox.tools:ls_tool
+
+  - name: read_file
+    group: file:read
+    use: sathiai.sandbox.tools:read_file_tool
+
+  - name: glob
+    group: file:read
+    use: sathiai.sandbox.tools:glob_tool
+    max_results: 200
+
+  - name: grep
+    group: file:read
+    use: sathiai.sandbox.tools:grep_tool
+    max_results: 100
+
+  - name: write_file
+    group: file:write
+    use: sathiai.sandbox.tools:write_file_tool
+
+  - name: str_replace
+    group: file:write
+    use: sathiai.sandbox.tools:str_replace_tool
+
+  # Bash execution tool
+  - name: bash
+    group: bash
+    use: sathiai.sandbox.tools:bash_tool
+
+# ============================================================================
+# Tool Search Configuration (Deferred Tool Loading)
+# ============================================================================
+tool_search:
+  enabled: false
+
+# ============================================================================
+# Sandbox Configuration
+# ============================================================================
+uploads:
+  max_files: 10
+  max_file_size: 52428800    # 50 MiB
+  max_total_size: 104857600  # 100 MiB
+  auto_convert_documents: false
+  pdf_converter: auto
+
+sandbox:
+  use: sathiai.sandbox.local:LocalSandboxProvider
+  allow_host_bash: false
+  bash_output_max_chars: 20000
+  read_file_output_max_chars: 50000
+  ls_output_max_chars: 20000
+
+# ============================================================================
+# Skills Configuration
+# ============================================================================
+skills:
+  container_path: /mnt/skills
+
+# ============================================================================
+# Title Generation Configuration
+# ============================================================================
+title:
+  enabled: true
+  max_words: 6
+  max_chars: 60
+  model_name: null # Use default model (first model in models list)
+
+# ============================================================================
+# Summarization Configuration
+# ============================================================================
+summarization:
+  enabled: true
+  model_name: null
+  trigger:
+    - type: tokens
+      value: 15564
+  keep:
+    type: messages
+    value: 10
+  trim_tokens_to_summarize: 15564
+  summary_prompt: null
+  preserve_recent_skill_count: 5
+  preserve_recent_skill_tokens: 25000
+  preserve_recent_skill_tokens_per_skill: 5000
+  skill_file_read_tool_names:
+    - read_file
+    - read
+    - view
+    - cat
+
+# ============================================================================
+# Memory Configuration
+# ============================================================================
+memory:
+  enabled: true
+  storage_path: memory.json # Path relative to backend directory
+  debounce_seconds: 30 # Wait time before processing queued updates
+  model_name: null # Use default model
+  max_facts: 100 # Maximum number of facts to store
+  fact_confidence_threshold: 0.7 # Minimum confidence for storing facts
+  injection_enabled: true # Whether to inject memory into system prompt
+  max_injection_tokens: 2000 # Maximum tokens for memory injection
+
+# ============================================================================
+# Custom Agent Management API
+# ============================================================================
+agents_api:
+  enabled: false
+
+# ============================================================================
+# Skill Self-Evolution Configuration
+# ============================================================================
+skill_evolution:
+  enabled: false # Set to true to allow agent-managed writes under skills/custom
+  moderation_model_name: null # Model for LLM-based security scanning (null = use default model)
+
+# ============================================================================
+# Database
+# ============================================================================
+database:
+  backend: sqlite
+  sqlite_dir: .sathi-ai/data
+
+# ============================================================================
+# Run Events Configuration
+# ============================================================================
+run_events:
+  backend: memory
+  max_trace_content: 10240
+  track_token_usage: true
+
+# ============================================================================
+# IM Channels Configuration
+# ============================================================================
+# channels:
+#   langgraph_url: http://localhost:8001/api
+#   gateway_url: http://localhost:8001
+
+# ============================================================================
+# Guardrails Configuration
+# ============================================================================
+# guardrails:
+#   enabled: true
+
+# ============================================================================
+# Circuit Breaker Configuration
+# ============================================================================
+# circuit_breaker:
+#   failure_threshold: 5
+#   recovery_timeout_sec: 60
