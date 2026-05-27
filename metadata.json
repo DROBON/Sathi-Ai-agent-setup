@@ -1,1 +1,6 @@
-jgxbn
+{
+  "name": "Sathi AI (সাথী এআই)",
+  "description": "Secure LangGraph-based AI agent system with real-time multi-device sync, sandbox execution, and advanced security monitoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
