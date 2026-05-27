@@ -1,1 +1,78 @@
-jgfxgh
+version: "3.9"
+
+services:
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - QDRANT_HOST=qdrant
+    depends_on:
+      - ollama
+      - qdrant
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  qdrant:
+    image: qdrant/qdrant
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.52.0
+    container_name: playwright
+
+  zap:
+    image: zaproxy/zap-stable
+    container_name: zap
+    ports:
+      - "8081:8080"
+
+  suricata:
+    image: jasonish/suricata
+    container_name: suricata
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3001:3000"
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+
+volumes:
+  ollama:
